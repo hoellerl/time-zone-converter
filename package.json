@@ -1,0 +1,17 @@
+{
+  "name": "time-zone-converter",
+  "version": "1.0.0",
+  "description": "converts a time (e.g. 11 PM UTC) to your local timezone",
+  "main": " ",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adam Höllerl",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/firefox": "^0.0.34",
+    "@types/firefox-webext-browser": "^111.0.4",
+    "@types/http-cache-semantics": "^4.0.4",
+    "web-ext": "^7.8.0"
+  }
+}

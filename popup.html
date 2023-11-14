@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Timezone Converter Options</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="dist/popup.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h3>Timezone Converter Options</h3>
+  </div>
+  <div class="section">
+    <h4>ISO Time Formatting</h4>
+    <p>will get replaced after conversion with:</p>
+    <div class="dropdown">
+      <select>
+        <option>ISO formatting</option>
+        <option>AM/PM formatting</option>
+        <option>24H formatting</option>
+      </select>
+    </div>
+    <div class="toggle">
+      <input type="checkbox" id="include-date-iso">
+      <div class="toggle-slider"></div>
+    <label class="toggle-label" for="include-date-iso">Include todays date when none provided</label>
+
+    </div>
+  </div>
+  <div class="section">
+    <h4>AM/PM Time Formatting</h4>
+    <p>will get replaced after conversion with:</p>
+    <div class="dropdown">
+      <select>
+        <option>AM/PM formatting</option>
+        <option>ISO formatting</option>
+        <option>24H formatting</option>
+      </select>
+    </div>
+    <div class="toggle">
+      <input type="checkbox" id="include-date-ampm">
+      <div class="toggle-slider"></div>
+    <label class="toggle-label" for="include-date-ampm">Include Date</label>
+
+    </div>
+
+  </div>
+  <div class="section">
+    <h4>24H Time Formatting</h4>
+    <p>will get replaced after conversion with:</p>
+
+    <div class="dropdown">
+      <select>
+        <option>24H formatting</option>
+        <option>ISO formatting</option>
+        <option>AM/PM formatting</option>
+      </select>
+    </div>
+    <div class="toggle">
+      <input type="checkbox" id="include-date-24h">
+      <div class="toggle-slider"></div>
+    <label class="toggle-label" for="include-date-24h">Include Date</label>
+    </div>
+  </div>
+</body>
+</html>

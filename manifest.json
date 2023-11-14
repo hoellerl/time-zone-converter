@@ -1,0 +1,30 @@
+
+
+{
+
+  "manifest_version": 2,
+  "name": "Timezone Converter",
+  "version": "0.2",
+  "author": "Adam Höllerl",
+  "description": "Converts times to your local time zone.",
+
+  "icons": {
+    "48": "icons/icon48.png"
+  },
+
+  "permissions": ["activeTab", "contextMenus", "storage"],
+  
+  "background": {
+    "scripts": ["dist/background.js"]
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["dist/content.js"]
+    }
+  ],
+  "browser_action": {
+    "default_popup": "popup.html"
+}
+}
