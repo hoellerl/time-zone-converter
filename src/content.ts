@@ -36,15 +36,14 @@ document.addEventListener("mouseup", function () {
 
 
 browser.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    if (message.type === "replaceText") {
+    if (message.type === "replaceDate") {
         replaceSelectedText( message.text, message.timezones);
+    }
+    else if (message.type === "getUserTimezone"){
+        sendResponse(prompt(message.prompt));
     }
 });
 
-
-browser.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    sendResponse(prompt(message.prompt));
-});
 
 function replaceSelectedText(newText:string, tz:{ [key: string]: string }) {
     let selectedText = range.toString();

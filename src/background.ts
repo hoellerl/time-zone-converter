@@ -1,6 +1,5 @@
 const contextMenuId = "convert-time";
 let selectedText :string;
-
 // Declare timezone abbreviation to offset dictionary, might find a better way to do this later
 // long names => short names, so that for example CEST doesn't get mistaken for EST
 const timezones :{ [key: string]: string } = {
@@ -46,10 +45,19 @@ browser.contextMenus.create({
 }, onCreated);
 
 // once the context menu item is clicked, convert the selected date to the user's local timezone
-browser.contextMenus.onClicked.addListener((info, tab) => {
+browser.contextMenus.onClicked.addListener(async (info, tab) => {
     console.log("DTC: Context menu clicked; id=" + info.menuItemId);
+    const activeTab = await getActiveTab();
+    if (activeTab.id === undefined){
+        console.error("DTC: No active tab found!");
+        return;
+    }
     if (info.menuItemId === contextMenuId){
-        convertTime();
+        let newTime :string|undefined = await convertTime(activeTab.id);
+        if (newTime === undefined){
+            return;
+        }
+        replaceDate(newTime, activeTab.id);
         return;
     }
 
@@ -70,41 +78,19 @@ browser.runtime.onMessage.addListener(function (message, sender, sendResponse) {
  * Converts the selected date to the user's local timezone
  * @returns The new date as a string or undefined when an error occurs or the user cancels the prompt
  */
-async function convertTime() :Promise<string | undefined>{
+async function convertTime(tabId:number) :Promise<string | undefined>{
 
     let timezone = extractTimezoneFromSelectedText();
-
-    const offsetFormat = /^[+-]?((0?\d)|(1[0-4]))(:[0-5]\d)?$/;
-    const activeTab = await getActiveTab();
-    if (activeTab.id === undefined){
-        return;
+    if (timezone === undefined){
+        timezone = await getTimezoneByPrompt(tabId);
     }
-    let response = await browser.tabs.sendMessage(activeTab.id, { type: "getUserTimezone", prompt:"No timezone found in selected text, please enter it manually! (abbreviation or +/-HH:MM)" });
-
-    if (response === undefined){
-        return;
-    }
-    if (Object.keys(timezones).includes(response)){
-        timezone = timezones[response as keyof typeof timezones];
-    }
-    else if (offsetFormat.test(response)){
-        if (!response.startsWith("+") && !response.startsWith("-")){
-            response = "+" + response;
-        }
-        timezone = response;
-    }
-    else{
-        timezone = "Z";
-        console.log(`DTC: Invalid or unsupported timezone format (${response}), defaulting to UTC! If you are sure it is valid, please open an issue on GitHub.`);
-    }
-
 
     let iso;
-    const iso8601 = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|([\+-])([01]\d|2[0-3]):?([0-5]\d)?)?$/;
-    const MMDDYYYY = /(0?[1-9]|[1][0-2])(.)(0?[1-9]|[12][0-9]|3[01])\2(\d\d\d\d)/;
-    const DDMMYYYY = /(0?[1-9]|[12][0-9]|3[01])(.)(0?[1-9]|[1][0-2])\2(\d\d\d\d)/;
-    const format12H = /(((0?[1-9])|(1[012]))(([^\d])([0-5]\d))?(\6[0-5]\d)? ?([aApP][mM]))/;
-    const format24H = /(((0?[0-9])|(1\d)|(2[0-4]))([^\d])([0-5]\d)(\6[0-5]\d)?)/;
+    const iso8601 = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|([+-])([01]\d|2[0-3]):?([0-5]\d)?)?$/;
+    const MMDDYYYY = /(0?[1-9]|1[0-2])(.)(0?[1-9]|[12][0-9]|3[01])\2(\d\d\d\d)/;
+    const DDMMYYYY = /(0?[1-9]|[12][0-9]|3[01])(.)(0?[1-9]|1[0-2])\2(\d\d\d\d)/;
+    const format12H = /(((0?[1-9])|(1[012]))((\D)([0-5]\d))?(\6[0-5]\d)? ?([aApP][mM]))/;
+    const format24H = /(((0?[0-9])|(1\d)|(2[0-4]))(\D)([0-5]\d)(\6[0-5]\d)?)/;
     if (iso8601.test(selectedText)){
         iso = selectedText;
         return (new Date(iso)).toLocaleString();
@@ -164,6 +150,32 @@ function extractTimezoneFromSelectedText(): string | undefined {
 }
 
 /**
+ * Prompts the user to enter a timezone
+ * @param tabId The id of the tab to prompt the user in
+ */
+async function getTimezoneByPrompt(tabId:number): Promise<string | undefined> {
+    const offsetFormat = /^[+-]?((0?\d)|(1[0-4]))(:[0-5]\d)?$/;
+
+    let response = await browser.tabs.sendMessage(tabId, { type: "getUserTimezone", prompt:"No timezone found in selected text, please enter it manually! (abbreviation or +/-HH:MM)" });
+    if (response === undefined){
+        return;
+    }
+    if (Object.keys(timezones).includes(response)){
+        return timezones[response as keyof typeof timezones];
+    }
+    else if (offsetFormat.test(response)){
+        if (!response.startsWith("+") && !response.startsWith("-")){
+            response = "+" + response;
+        }
+        return response;
+    }
+    else{
+        console.error(`DTC: Invalid or unsupported timezone format (${response}), defaulting to UTC! If you are sure it is valid, please open an issue on GitHub.`);
+        return "Z";
+    }
+}
+
+/**
  * Gets the active tab
  * @returns The active tab
  */
@@ -176,15 +188,12 @@ async function getActiveTab(): Promise<browser.tabs.Tab> {
 /**
  * Sends a message to the content script to replace the selected date with the new date
  * @param dateString The new date as a string to replace the old one with
+ * @param tabId The id of the tab to replace the date in
  */
-function replaceText(dateString:string) {
-    getActiveTab().then((activeTab) => {
-    if (activeTab === undefined || activeTab.id === undefined){
-        return;
-    }
+function replaceDate(dateString:string, tabId:number) {
+
     // send message to the content script of the active tab
-    browser.tabs.sendMessage(activeTab.id, { type: "replaceText", text: dateString, timezones: timezones });
-});
+    browser.tabs.sendMessage(tabId, { type: "replaceDate", text: dateString, timezones: timezones });
 }
 
 /**

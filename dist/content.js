@@ -30,12 +30,12 @@ document.addEventListener("mouseup", function () {
     });
 });
 browser.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    if (message.type === "replaceText") {
+    if (message.type === "replaceDate") {
         replaceSelectedText(message.text, message.timezones);
     }
-});
-browser.runtime.onMessage.addListener(function (message, sender, sendResponse) {
-    sendResponse(prompt(message.prompt));
+    else if (message.type === "getUserTimezone") {
+        sendResponse(prompt(message.prompt));
+    }
 });
 function replaceSelectedText(newText, tz) {
     let selectedText = range.toString();
